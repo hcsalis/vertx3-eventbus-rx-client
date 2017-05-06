@@ -1,3 +1,14 @@
 {
-  "extends": "tslint:latest"
+  "extends": "tslint:latest",
+  "rules": {
+    "quotemark": [
+      true,
+      "single"
+    ],
+    "max-line-length": [140],
+    "interface-name": false,
+    "member-access": false,
+    "variable-name": false,
+    "arrow-parens": false
+  }
 }

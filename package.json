@@ -3,10 +3,21 @@
   "version": "0.0.0",
   "description": "vertx3-eventbus-rx-client",
   "license": "MIT",
-  "repository": "",
-  "author": "Halil Can Salis",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/hcsalis/vertx3-eventbus-rx-client.git"
+  },
+  "author": {
+    "name": "Halil Can Salis"
+  },
   "keywords": [
-    ""
+    "websockets",
+    "websocket",
+    "sockjs",
+    "vert.x",
+    "vertx3-eventbus-client",
+    "rxjs",
+    "typescript"
   ],
   "files": [
     "dist"
@@ -23,6 +34,11 @@
     "watch:test": "npm run spec -- --watch"
   },
   "dependencies": {
+    "sockjs-client": "1.1.4",
+    "vertx3-eventbus-client": "3.4.1"
+  },
+  "peerDependencies": {
+    "rxjs": "^5.0.0"
   },
   "devDependencies": {
     "@types/chai": "^3.0.0",
@@ -35,7 +51,8 @@
     "ts-node": "^3.0.0",
     "tslint": "^5.0.0",
     "typescript": "^2.0.0",
-    "coveralls": "^2.0.0"
+    "coveralls": "^2.0.0",
+    "rxjs": "^5.0.0"
   },
   "engines": {
     "node": ">=4.0.0"
