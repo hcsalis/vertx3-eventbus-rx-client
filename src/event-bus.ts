@@ -39,17 +39,30 @@ export class EventBus {
     this._stateSource = new BehaviorSubject<State>(delegate.state);
     this.state$ = this._stateSource.asObservable();
     this._stateNotOpenNotifier = this.state$.filter(state => state !== State.OPEN);
-    this.delegate.onopen = () => {
-      this._stateSource.next(State.OPEN);
-    };
-    this.delegate.onclose = (err: any) => {
-      this._stateSource.next(State.CLOSED);
-      if (err) {
-        this._stateSource.error(err);
-      } else {
-        this._stateSource.complete();
-      }
-    };
+
+    // preserve existing delegate event handlers.
+    this.delegate.onopen = (delegateEventHandler => {
+      return () => {
+        if (delegateEventHandler) {
+          delegateEventHandler();
+        }
+        this._stateSource.next(State.OPEN);
+      };
+    })(this.delegate.onopen);
+
+    this.delegate.onclose = (delegateEventHandler => {
+      return (err: any) => {
+        if (delegateEventHandler) {
+          delegateEventHandler(err);
+        }
+        this._stateSource.next(State.CLOSED);
+        if (err) {
+          this._stateSource.error(err);
+        } else {
+          this._stateSource.complete();
+        }
+      };
+    })(this.delegate.onclose);
   }
 
   send(address: string, message: any, headers?: object) {
