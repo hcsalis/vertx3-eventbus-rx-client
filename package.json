@@ -28,31 +28,38 @@
     "clean": "rimraf dist",
     "lint": "tslint --force --format verbose \"src/**/*.ts\"",
     "build": "npm run clean && npm run lint && echo Using TypeScript && tsc --version && tsc --pretty",
-    "test": "npm run build && mocha --compilers ts:ts-node/register --recursive 'spec/**/*.spec.ts'",
-    "coverage": "nyc --include='src/**/*.ts' --reporter=text --reporter=html --reporter=lcov mocha --compilers ts:ts-node/register --recursive 'spec/**/*.spec.ts'",
+    "test": "npm run build && mocha --compilers ts:ts-node/register --recursive \"spec/**/*.spec.ts\"",
+    "e2e": "npm run build && mocha --compilers ts:ts-node/register --recursive \"spec/**/*.e2e.ts\"",
+    "coverage": "nyc --include=\"src/**/*.ts\" --reporter=text --reporter=lcov mocha --compilers ts:ts-node/register --recursive \"spec/**/*.spec.ts\"",
     "watch": "npm run build -- --watch",
-    "watch:test": "npm run spec -- --watch"
+    "watch:test": "npm run test -- --watch",
+    "watch:e2e": "npm run e2e -- --watch"
   },
   "dependencies": {
-    "sockjs-client": "1.1.4",
-    "vertx3-eventbus-client": "3.4.1"
   },
   "peerDependencies": {
-    "rxjs": "^5.0.0"
+    "rxjs": "^5.0.0",
+    "vertx3-eventbus-client": "^3.4.0"
   },
   "devDependencies": {
     "@types/chai": "^3.0.0",
     "@types/mocha": "^2.0.0",
     "@types/node": "^7.0.0",
+    "@types/sinon": "^2.2.0",
+    "@types/sinon-chai": "^2.7.27",
     "chai": "^3.0.0",
     "mocha": "^3.0.0",
+    "sinon": "^2.1.0",
+    "sinon-chai": "^2.9.0",
     "nyc": "^10.0.0",
     "rimraf": "^2.0.0",
     "ts-node": "^3.0.0",
     "tslint": "^5.0.0",
     "typescript": "^2.0.0",
     "coveralls": "^2.0.0",
-    "rxjs": "^5.0.0"
+    "rxjs": "^5.0.0",
+    "vertx3-eventbus-client": "^3.4.0",
+    "sockjs-client": "1.1.4"
   },
   "engines": {
     "node": ">=4.0.0"
@@ -62,7 +69,9 @@
       "src/**/*.ts"
     ],
     "exclude": [
-      "dist"
+      "dist",
+      "src/model/",
+      "src/**/*.d.ts"
     ],
     "extension": [
       ".ts"

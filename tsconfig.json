@@ -5,10 +5,13 @@
     "module": "commonjs",
     "moduleResolution": "node",
     "outDir": "./dist",
+    "sourceMap": true,
     "noImplicitAny": true,
     "preserveConstEnums": true,
     "removeComments": true,
     "stripInternal": true,
+    "noImplicitReturns": true,
+    "strictNullChecks": true,
     "typeRoots": [
       "./node_modules/@types"
     ],
