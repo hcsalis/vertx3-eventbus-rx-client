@@ -7,6 +7,9 @@ npm-debug.log
 ### IDEs
 .idea/
 .vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
 
 ### macOS template
 *.DS_Store
