@@ -1,6 +1,6 @@
 {
   "name": "vertx3-eventbus-rx-client",
-  "version": "0.0.0",
+  "version": "0.3.0",
   "description": "vertx3-eventbus-rx-client",
   "license": "MIT",
   "repository": {
