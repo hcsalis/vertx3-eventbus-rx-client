@@ -1,6 +1,4 @@
-import { Event } from './event';
-export interface Error extends Event {
-  type: 'err';
+export interface Error {
   failureCode: number;
   failureType: string;
   message: any;

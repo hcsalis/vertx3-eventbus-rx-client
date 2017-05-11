@@ -1,8 +1,7 @@
 import { Observable } from 'rxjs/Observable';
-import { Event } from './event';
 
-export interface Message<T = any> extends Event {
-  type: 'publish' | 'send';
+export interface Message<T = any> {
+  address: string;
   replyAddress?: string;
   headers?: object;
   body?: T;
