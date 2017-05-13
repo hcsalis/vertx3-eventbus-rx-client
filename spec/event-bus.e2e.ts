@@ -70,7 +70,7 @@ describe('EventBus', () => {
       failureCode: 500,
       message: 'expected failure',
     };
-    const obs = eb.rxSend(failAddress, body, {dummyHeader: 'dummyHeader'});
+    const obs = eb.rxSend(failAddress, body, { dummyHeader: 'dummyHeader' });
     const emissions = await getEmissions(obs);
     expect(emissions).to.have.length(1);
     expect(emissions[0]).to.have.property('kind', 'E');
@@ -94,10 +94,16 @@ describe('EventBus', () => {
     expect(replyOne).to.have.property('body', 'pong');
     expect(replyOne.reply).to.be.a('function');
     expect(replyOne.rxReply).to.be.a('function');
+    if (!replyOne.rxReply) {
+      return; // for tsc
+    }
     const replyTwo = await replyOne.rxReply('ping').toPromise();
     expect(replyTwo).to.have.property('body', 'pong');
     expect(replyTwo.reply).to.be.a('function');
     expect(replyTwo.rxReply).to.be.a('function');
+    if (!replyTwo.reply) {
+      return; // for tsc
+    }
     await replyTwo.reply({});
   });
 });

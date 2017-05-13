@@ -1,10 +1,10 @@
 import { Observable } from 'rxjs/Observable';
 
-export interface Message<T = any> {
+export interface Message<T> {
   address: string;
   replyAddress?: string;
-  headers?: object;
+  headers?: any;
   body?: T;
-  reply?: (message: any, headers?: object) => void;
-  rxReply?: <R>(message: any, headers?: object) => Observable<Message<R>>;
+  reply?: (message: any, headers?: any) => void;
+  rxReply?: (message: any, headers?: any) => Observable<Message<any>>;
 }

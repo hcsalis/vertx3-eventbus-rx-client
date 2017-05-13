@@ -28,11 +28,11 @@ export class EventBus {
     return this.delegate.state;
   }
 
-  get defaultHeaders(): object {
+  get defaultHeaders(): any {
     return this.delegate.defaultHeaders;
   }
 
-  set defaultHeaders(headers: object) {
+  set defaultHeaders(headers: any) {
     this.delegate.defaultHeaders = headers;
   }
 
@@ -46,22 +46,22 @@ export class EventBus {
       .subscribe({ error: closeEvent => this._closeEvent = closeEvent });
   }
 
-  send(address: string, message: any, headers?: object) {
+  send(address: string, message: any, headers?: any) {
     this.delegate.send(address, message, headers);
   }
 
-  rxSend<T = any>(address: string, message: any, headers?: object): Observable<Message<T>> {
-    const generatorFn = Observable.bindNodeCallback<string, any, (object | undefined), Message<T>>(this.delegate.send.bind(this.delegate));
+  rxSend(address: string, message: any, headers?: any) {
+    const generatorFn = Observable.bindNodeCallback<string, any, (object | undefined), Message<any>>(this.delegate.send.bind(this.delegate));
     return generatorFn(address, message, headers)
       .map(this._appendReplyFns)
       .takeUntil(this._createCompleteNotifier(this.state$));
   }
 
-  publish(address: string, message: any, headers?: object) {
+  publish(address: string, message: any, headers?: any) {
     this.delegate.publish(address, message, headers);
   }
 
-  rxConsumer<T = any>(address: string, headers?: object): Observable<Message<T>> {
+  rxConsumer(address: string, headers?: any) {
     return Observable.fromEventPattern(
       handler => {
         this.delegate.registerHandler(address, headers, handler);
@@ -77,7 +77,7 @@ export class EventBus {
         }
         return msg;
       })
-      .map(this._appendReplyFns)
+      .map<Message<any>, Message<any>>(this._appendReplyFns)
       .takeUntil(this._createCompleteNotifier(this.state$));
   }
 
@@ -89,18 +89,18 @@ export class EventBus {
     this.delegate.pingEnabled(enabled);
   }
 
-  private _appendReplyFns = (msg: Message): Message => {
+  private _appendReplyFns = <T>(msg: Message<T>): Message<T> => {
     const replyAddress = msg.replyAddress;
     if (!replyAddress) {
       return msg;
     }
     return {
       ...msg,
-      reply: (message: any, headers?: object) => {
+      reply: (message: any, headers?: any) => {
         this.send(replyAddress, message, headers);
       },
-      rxReply: <T = any>(message: any, headers?: object): Observable<Message<T>> => {
-        return this.rxSend<T>(replyAddress, message, headers);
+      rxReply: (message: any, headers?: any) => {
+        return this.rxSend(replyAddress, message, headers);
       },
     };
   }

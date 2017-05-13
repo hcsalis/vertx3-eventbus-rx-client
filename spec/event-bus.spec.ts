@@ -195,7 +195,7 @@ describe('EventBus', () => {
         it('should emit received reply message and complete', async () => {
           const delegate = new FakeDelegate();
           const eb = new EventBus(delegate);
-          const expectedMsg: Message = { address: '1234', body: 'expected' };
+          const expectedMsg: Message<any> = { address: '1234', body: 'expected' };
           sinon
             .stub(delegate, 'send')
             .callsFake((address: any, message: any, headers: any, callback: nodeStyleCallback) => {
@@ -211,7 +211,7 @@ describe('EventBus', () => {
           it('should append reply fns before emitting the message', async () => {
             const delegate = new FakeDelegate();
             const eb = new EventBus(delegate);
-            const expectedMsg: Message = { address: '1234', body: 'expected', replyAddress: '4321' };
+            const expectedMsg: Message<any> = { address: '1234', body: 'expected', replyAddress: '4321' };
             sinon
               .stub(delegate, 'send')
               .callsFake((address: any, message: any, headers: any, callback: nodeStyleCallback) => {
@@ -230,7 +230,7 @@ describe('EventBus', () => {
           it('should not  append reply fns', async () => {
             const delegate = new FakeDelegate();
             const eb = new EventBus(delegate);
-            const expectedMsg: Message = { address: '1234', body: 'expected' };
+            const expectedMsg: Message<any> = { address: '1234', body: 'expected' };
             sinon
               .stub(delegate, 'send')
               .callsFake((address: any, message: any, headers: any, callback: nodeStyleCallback) => {
@@ -351,7 +351,7 @@ describe('EventBus', () => {
         it('should emit received messages', async () => {
           const delegate = new FakeDelegate();
           const eb = new EventBus(delegate);
-          const expectedMessages: Message[] = [
+          const expectedMessages: Array<Message<any>> = [
             { address: 'address', body: 'test' },
             { address: 'address', body: 'test' },
           ];
@@ -373,7 +373,7 @@ describe('EventBus', () => {
           it('should append reply fns before emitting the message', async () => {
             const delegate = new FakeDelegate();
             const eb = new EventBus(delegate);
-            const expectedMsg: Message = { address: '1234', body: 'expected', replyAddress: '4321' };
+            const expectedMsg: Message<any> = { address: '1234', body: 'expected', replyAddress: '4321' };
             sinon
               .stub(delegate, 'registerHandler')
               .callsFake((address: any, headers: any, callback: nodeStyleCallback) => {
@@ -392,7 +392,7 @@ describe('EventBus', () => {
           it('should not  append reply fns', async () => {
             const delegate = new FakeDelegate();
             const eb = new EventBus(delegate);
-            const expectedMsg: Message = { address: '1234', body: 'expected' };
+            const expectedMsg: Message<any> = { address: '1234', body: 'expected' };
             sinon
               .stub(delegate, 'registerHandler')
               .callsFake((address: any, headers: any, callback: nodeStyleCallback) => {
@@ -413,7 +413,7 @@ describe('EventBus', () => {
         it('should error with received message', async () => {
           const delegate = new FakeDelegate();
           const eb = new EventBus(delegate);
-          const expectedMsg: Message = { address: 'address', body: {} };
+          const expectedMsg: Message<any> = { address: 'address', body: {} };
           const expectedErr: Error = { failureCode: 1, failureType: 'type', message: 'test' };
           sinon
             .stub(delegate, 'registerHandler')
@@ -532,7 +532,7 @@ describe('EventBus', () => {
   describe('_appendReplyFns', () => {
     it('should not append when reply address is not present', () => {
       const eb = new EventBus(new FakeDelegate());
-      const msg: Message = {
+      const msg: Message<any> = {
         address: 'test',
       };
       const res = (eb as any)._appendReplyFns(msg);
@@ -542,11 +542,11 @@ describe('EventBus', () => {
 
     it('should append when reply address is present', () => {
       const eb = new EventBus(new FakeDelegate());
-      const msg: Message = {
+      const msg: Message<any> = {
         address: 'test',
         replyAddress: 'rep',
       };
-      const res: Message = (eb as any)._appendReplyFns(msg);
+      const res: Message<any> = (eb as any)._appendReplyFns(msg);
       expect(res.reply).to.be.a('function');
       expect(res.rxReply).to.be.a('function');
     });
@@ -556,7 +556,7 @@ describe('EventBus', () => {
 type nodeStyleCallback = (err?: any, res?: any) => void;
 
 class FakeDelegate {
-  defaultHeaders: object = {};
+  defaultHeaders: any = {};
   sockJSConn = new EventEmitter();
   state: State = State.CONNECTING;
   onopen: () => void;
