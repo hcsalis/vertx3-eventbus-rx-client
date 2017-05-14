@@ -1,3 +1,3 @@
 export interface Options {
-  vertxbus_ping_interval: number;
+  vertxbus_ping_interval?: number;
 }

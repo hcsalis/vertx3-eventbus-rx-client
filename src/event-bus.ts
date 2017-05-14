@@ -17,11 +17,36 @@ import { Options } from './model/options';
 import { State } from './model/state';
 
 export class EventBus {
-  static create(url: string, options?: Options) {
+
+  /**
+   * Factory method to create an Rxified EventBus instance.
+   *
+   * @static
+   * @param {string} url Server URL
+   * @param {Options} [options] EventBus and SockJS options.  Refer to SockJS docs for other available options.
+   * @returns {EventBus}
+   *
+   * @memberof EventBus
+   */
+  static create(url: string, options?: Options): EventBus {
     const delegate = new EB(url, options);
     return new EventBus(delegate);
   }
 
+  /**
+   * Wrapped non-Rxified EventBus instance.
+   *
+   * @type {*}
+   * @memberof EventBus
+   */
+  delegate: any;
+
+  /**
+   * Default EventBus message headers.
+   *
+   * @type {*}
+   * @memberof EventBus
+   */
   get defaultHeaders(): any {
     return this.delegate.defaultHeaders;
   }
@@ -30,19 +55,48 @@ export class EventBus {
     this.delegate.defaultHeaders = headers;
   }
 
+  /**
+   * Observable stream of the state.
+   * - emits current state immediately upon subscription.
+   * - completes when state is CLOSED.
+   * @type {Observable<State>}
+   * @memberof EventBus
+   */
   state$: Observable<State>;
 
+  /**
+   * Current state
+   *
+   * @readonly
+   * @type {State}
+   * @memberof EventBus
+   */
   get state(): State {
     return this.delegate.state;
   }
 
-  get closeEvent() {
+  /**
+   * Close event emitted by the underlying SockJS connection.
+   *
+   * @readonly
+   * @type {(CloseEvent | null)}
+   * @memberof EventBus
+   */
+  get closeEvent(): CloseEvent | null {
     return this._closeEvent;
   }
   private _closeEvent: CloseEvent | null = null;
 
-  constructor(public delegate: any) {
-    // capture close event to pass it to future state subscriptions
+  /**
+   * Creates an instance of Rxified EventBus.
+   * This is useful if you have to wrap an existing non-Rxified EventBus instance. Otherwise, use the static factory method to create an instance.
+   * @param {*} delegate non-Rxified EventBus instance
+   *
+   * @memberof EventBus
+   */
+  constructor(delegate: any) {
+    this.delegate = delegate;
+    // capture close event
     this._stateClosedEvent$.subscribe(
       event => this._closeEvent = event || null,
     );
@@ -57,21 +111,64 @@ export class EventBus {
     });
   }
 
+  /**
+   * Send a message without expecting a reply.
+   *
+   * @param {string} address
+   * @param {*} message
+   * @param {*} [headers]
+   *
+   * @memberof EventBus
+   */
   send(address: string, message: any, headers?: any) {
     this.delegate.send(address, message, headers);
   }
 
+  /**
+   * Send a message and expect a reply. Returned observable:
+   * - waits until subscription to send the message.
+   * - emits the received reply message.
+   * - errors when receives an error reply.
+   * - completes after emitting the reply, or on EventBus close.
+   * @param {string} address
+   * @param {*} message
+   * @param {*} [headers]
+   * @returns {Observable<Message<any>>}
+   *
+   * @memberof EventBus
+   */
   rxSend(address: string, message: any, headers?: any): Observable<Message<any>> {
-    const generatorFn = Observable.bindNodeCallback<string, any, (object | undefined), Message<any>>(this.delegate.send.bind(this.delegate));
+    const generatorFn = Observable.bindNodeCallback<string, any, (any | undefined), Message<any>>(this.delegate.send.bind(this.delegate));
     return generatorFn(address, message, headers)
       .map(this._appendReplyFns)
       .takeUntil(this._stateClosedEvent$);
   }
 
+  /**
+   * Publish a message.
+   *
+   * @param {string} address
+   * @param {*} message
+   * @param {*} [headers]
+   *
+   * @memberof EventBus
+   */
   publish(address: string, message: any, headers?: any) {
     this.delegate.publish(address, message, headers);
   }
 
+  /**
+   * Registers a message consumer on the EventBus. Returned observable:
+   * - waits until subscription to register the consumer.
+   * - unregisters consumer when unsubscribed.
+   * - emits received messages.
+   * - completes on EventBus close.
+   * @param {string} address
+   * @param {*} [headers]
+   * @returns {Observable<Message<any>>}
+   *
+   * @memberof EventBus
+   */
   rxConsumer(address: string, headers?: any): Observable<Message<any>> {
     return Observable.fromEventPattern(
       handler => {
@@ -92,10 +189,21 @@ export class EventBus {
       .takeUntil(this._stateClosedEvent$);
   }
 
+  /**
+   * Close the EventBus and underlying SockJS connection.
+   *
+   * @memberof EventBus
+   */
   close() {
     this.delegate.close();
   }
 
+  /**
+   * Enable or disable EventBus pings.
+   * @param {boolean} enabled
+   *
+   * @memberof EventBus
+   */
   setPingEnabled(enabled: boolean) {
     this.delegate.pingEnabled(enabled);
   }
