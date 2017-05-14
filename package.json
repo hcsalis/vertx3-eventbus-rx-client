@@ -58,8 +58,7 @@
     "typescript": "^2.0.0",
     "coveralls": "^2.0.0",
     "rxjs": "^5.0.0",
-    "vertx3-eventbus-client": "^3.4.0",
-    "sockjs-client": "1.1.4"
+    "vertx3-eventbus-client": "^3.4.0"
   },
   "engines": {
     "node": ">=4.0.0"
