@@ -3,13 +3,11 @@ import { EventEmitter } from 'events';
 import * as sinon from 'sinon';
 import * as sinonChai from 'sinon-chai';
 import { EventBus } from '../src';
-import { CloseEvent } from '../src/model/close-event';
 import { Error } from '../src/model/error';
 import { Message } from '../src/model/message';
 import { State } from '../src/model/state';
 import { RxMarbleHelper } from './helpers/marble-testing';
 import { callFn, getCloseEvent, getEmissions, getNoop } from './helpers/util';
-
 use(sinonChai);
 
 describe('EventBus', () => {
@@ -53,8 +51,80 @@ describe('EventBus', () => {
     });
   });
 
+  describe('closeEvent', () => {
+    describe('when state is not closed', () => {
+      it('should be null', () => {
+        const delegate = new FakeDelegate();
+        delegate.state = State.CONNECTING;
+        const eb = new EventBus(delegate);
+        expect(eb.closeEvent).to.be.null;
+      });
+    });
+    describe('when delegate is closed before the instance creation', () => {
+      it('should be null', () => {
+        const delegate = new FakeDelegate();
+        delegate.state = State.CLOSED;
+        const eb = new EventBus(delegate);
+        expect(eb.closeEvent).to.be.null;
+      });
+    });
+    describe('when state is just closed', () => {
+      it('should be available from state$ complete handlers', () => {
+        const delegate = new FakeDelegate();
+        delegate.state = State.CONNECTING;
+        const eb = new EventBus(delegate);
+        const closeEvent = getCloseEvent(true);
+        let checked = false;
+        eb.state$.subscribe(
+          {
+            complete: () => {
+              expect(eb.closeEvent).to.be.equal(closeEvent);
+              checked = true;
+            },
+          },
+        );
+        delegate.sockJSConn.emit('close', closeEvent);
+        expect(checked).to.be.true;
+      });
+      it('should be available from rxSend complete handlers', () => {
+        const delegate = new FakeDelegate();
+        delegate.state = State.CONNECTING;
+        const eb = new EventBus(delegate);
+        const closeEvent = getCloseEvent(true);
+        let checked = false;
+        eb.rxSend('address', {}).subscribe(
+          {
+            complete: () => {
+              expect(eb.closeEvent).to.be.equal(closeEvent);
+              checked = true;
+            },
+          },
+        );
+        delegate.sockJSConn.emit('close', closeEvent);
+        expect(checked).to.be.true;
+      });
+      it('should be available from rxConsumer complete handlers', () => {
+        const delegate = new FakeDelegate();
+        delegate.state = State.CONNECTING;
+        const eb = new EventBus(delegate);
+        const closeEvent = getCloseEvent(true);
+        let checked = false;
+        eb.rxConsumer('address').subscribe(
+          {
+            complete: () => {
+              expect(eb.closeEvent).to.be.equal(closeEvent);
+              checked = true;
+            },
+          },
+        );
+        delegate.sockJSConn.emit('close', closeEvent);
+        expect(checked).to.be.true;
+      });
+    });
+  });
+
   describe('state$', () => {
-    describe('when subscribed', () => {
+    describe('when just subscribed', () => {
       describe('when connection is not CLOSED', () => {
         it('should emit current state right after subscription', () => {
           RxMarbleHelper.run(({ expectObservable }) => {
@@ -66,31 +136,15 @@ describe('EventBus', () => {
         });
       });
       describe('when connection is CLOSED', () => {
-        describe('when close was clean', () => {
-          it('should emit CLOSED and complete', () => {
-            RxMarbleHelper.run(({ expectObservable }) => {
-              const delegate = new FakeDelegate();
-              const eb = new EventBus(delegate);
-              // set to clean closed
-              delegate.state = State.CLOSED;
-              const closeEvent = getCloseEvent(true);
-              delegate.sockJSConn.emit('close', closeEvent);
-              expectObservable(eb.state$).toBe('(c|)', { c: State.CLOSED }, closeEvent);
-            });
-          });
-        });
-        // TODO remove
-        describe('when close was not clean', () => {
-          it('should emit CLOSED and error with close event', () => {
-            RxMarbleHelper.run(({ expectObservable }) => {
-              const delegate = new FakeDelegate();
-              const eb = new EventBus(delegate);
-              // set to dirty closed
-              delegate.state = State.CLOSED;
-              const closeEvent = getCloseEvent(false);
-              delegate.sockJSConn.emit('close', closeEvent);
-              expectObservable(eb.state$).toBe('(c#)', { c: State.CLOSED }, closeEvent);
-            });
+        it('should emit CLOSED and complete', () => {
+          RxMarbleHelper.run(({ expectObservable }) => {
+            const delegate = new FakeDelegate();
+            const eb = new EventBus(delegate);
+            // set to clean closed
+            delegate.state = State.CLOSED;
+            const closeEvent = getCloseEvent(true);
+            delegate.sockJSConn.emit('close', closeEvent);
+            expectObservable(eb.state$).toBe('(c|)', { c: State.CLOSED }, closeEvent);
           });
         });
       });
@@ -114,39 +168,19 @@ describe('EventBus', () => {
         });
       });
       describe('when connection closes', () => {
-        describe('when close is clean', () => {
-          it('should emit CLOSED and complete', () => {
-            RxMarbleHelper.run(({ cold, expectObservable }) => {
-              const delegate = new FakeDelegate();
-              const eb = new EventBus(delegate);
-              const effects = {
-                C: () => delegate.sockJSConn.emit('close', getCloseEvent(true)),
-              };
-              cold('--C', effects).do(callFn).subscribe();
-              const values = {
-                a: State.CONNECTING,
-                c: State.CLOSED,
-              };
-              expectObservable(eb.state$).toBe('a-(c|)', values);
-            });
-          });
-        });
-        describe('when close is not clean', () => {
-          it('should emit CLOSED and error with close event', () => {
-            RxMarbleHelper.run(({ cold, expectObservable }) => {
-              const delegate = new FakeDelegate();
-              const eb = new EventBus(delegate);
-              const closeEvent = getCloseEvent(false);
-              const effects = {
-                C: () => delegate.sockJSConn.emit('close', closeEvent),
-              };
-              cold('--C', effects).do(callFn).subscribe();
-              const values = {
-                a: State.CONNECTING,
-                c: State.CLOSED,
-              };
-              expectObservable(eb.state$).toBe('a-(c#)', values, closeEvent);
-            });
+        it('should emit CLOSED and complete', () => {
+          RxMarbleHelper.run(({ cold, expectObservable }) => {
+            const delegate = new FakeDelegate();
+            const eb = new EventBus(delegate);
+            const effects = {
+              C: () => delegate.sockJSConn.emit('close', getCloseEvent(true)),
+            };
+            cold('--C', effects).do(callFn).subscribe();
+            const values = {
+              a: State.CONNECTING,
+              c: State.CLOSED,
+            };
+            expectObservable(eb.state$).toBe('a-(c|)', values);
           });
         });
       });
@@ -178,7 +212,7 @@ describe('EventBus', () => {
       });
     });
     describe('when subscribed', () => {
-      it('should send message with supplied params', () => {
+      it('should call delegate.send with supplied params', () => {
         const delegate = new FakeDelegate();
         const eb = new EventBus(delegate);
         const sendSpy = sinon.spy(delegate, 'send');
@@ -208,7 +242,7 @@ describe('EventBus', () => {
           expect(emissions[1]).to.have.property('kind', 'C');
         });
         describe('when reply message has a reply address', () => {
-          it('should append reply fns before emitting the message', async () => {
+          it('should append reply fns before emitting the message and complete', async () => {
             const delegate = new FakeDelegate();
             const eb = new EventBus(delegate);
             const expectedMsg: Message<any> = { address: '1234', body: 'expected', replyAddress: '4321' };
@@ -227,7 +261,7 @@ describe('EventBus', () => {
           });
         });
         describe('when reply message does not have a reply address', () => {
-          it('should not  append reply fns', async () => {
+          it('should not append reply fns', async () => {
             const delegate = new FakeDelegate();
             const eb = new EventBus(delegate);
             const expectedMsg: Message<any> = { address: '1234', body: 'expected' };
@@ -281,31 +315,15 @@ describe('EventBus', () => {
       });
 
       describe('when connection closes while waiting for a reply', () => {
-        describe('when close is clean', () => {
-          it('should complete', () => {
-            RxMarbleHelper.run(({ cold, expectObservable }) => {
-              const delegate = new FakeDelegate();
-              const eb = new EventBus(delegate);
-              const effects = {
-                C: () => delegate.sockJSConn.emit('close', getCloseEvent(true)),
-              };
-              cold('--C', effects).do(callFn).subscribe();
-              expectObservable(eb.rxSend('test', {})).toBe('--|');
-            });
-          });
-        });
-        describe('when close is not clean', () => {
-          it('should error with close event', () => {
-            RxMarbleHelper.run(({ cold, expectObservable }) => {
-              const delegate = new FakeDelegate();
-              const eb = new EventBus(delegate);
-              const closeEvent = getCloseEvent(false);
-              const effects = {
-                C: () => delegate.sockJSConn.emit('close', closeEvent),
-              };
-              cold('--C', effects).do(callFn).subscribe();
-              expectObservable(eb.rxSend('test', {})).toBe('--#', [], closeEvent);
-            });
+        it('should complete', () => {
+          RxMarbleHelper.run(({ cold, expectObservable }) => {
+            const delegate = new FakeDelegate();
+            const eb = new EventBus(delegate);
+            const effects = {
+              C: () => delegate.sockJSConn.emit('close', getCloseEvent(true)),
+            };
+            cold('--C', effects).do(callFn).subscribe();
+            expectObservable(eb.rxSend('test', {})).toBe('--|');
           });
         });
       });
@@ -336,7 +354,7 @@ describe('EventBus', () => {
       });
     });
     describe('when subscribed', () => {
-      it('should register handler with supplied params', () => {
+      it('should register delegate handler with supplied params', () => {
         const delegate = new FakeDelegate();
         const eb = new EventBus(delegate);
         const spy = sinon.spy(delegate, 'registerHandler');
@@ -446,31 +464,15 @@ describe('EventBus', () => {
       });
 
       describe('when connection closes while subscribed', () => {
-        describe('when close is clean', () => {
-          it('should complete', () => {
-            RxMarbleHelper.run(({ cold, expectObservable }) => {
-              const delegate = new FakeDelegate();
-              const eb = new EventBus(delegate);
-              const effects = {
-                C: () => delegate.sockJSConn.emit('close', getCloseEvent(true)),
-              };
-              cold('--C', effects).do(callFn).subscribe();
-              expectObservable(eb.rxConsumer('test')).toBe('--|');
-            });
-          });
-        });
-        describe('when close is not clean', () => {
-          it('should error with close event', () => {
-            RxMarbleHelper.run(({ cold, expectObservable }) => {
-              const delegate = new FakeDelegate();
-              const eb = new EventBus(delegate);
-              const closeEvent = getCloseEvent(false);
-              const effects = {
-                C: () => delegate.sockJSConn.emit('close', closeEvent),
-              };
-              cold('--C', effects).do(callFn).subscribe();
-              expectObservable(eb.rxConsumer('test')).toBe('--#', [], closeEvent);
-            });
+        it('should complete', () => {
+          RxMarbleHelper.run(({ cold, expectObservable }) => {
+            const delegate = new FakeDelegate();
+            const eb = new EventBus(delegate);
+            const effects = {
+              C: () => delegate.sockJSConn.emit('close', getCloseEvent(true)),
+            };
+            cold('--C', effects).do(callFn).subscribe();
+            expectObservable(eb.rxConsumer('test')).toBe('--|');
           });
         });
       });
@@ -530,25 +532,66 @@ describe('EventBus', () => {
   });
 
   describe('_appendReplyFns', () => {
-    it('should not append when reply address is not present', () => {
-      const eb = new EventBus(new FakeDelegate());
-      const msg: Message<any> = {
-        address: 'test',
-      };
-      const res = (eb as any)._appendReplyFns(msg);
-      expect(res).to.not.haveOwnProperty('reply');
-      expect(res).to.not.haveOwnProperty('rxReply');
+    describe('when message does not have a reply address', () => {
+      it('should not append when reply address is not present', () => {
+        const eb = new EventBus(new FakeDelegate());
+        const msg: Message<any> = {
+          address: 'test',
+        };
+        const res = (eb as any)._appendReplyFns(msg);
+        expect(res).to.not.haveOwnProperty('reply');
+        expect(res).to.not.haveOwnProperty('rxReply');
+      });
     });
-
-    it('should append when reply address is present', () => {
-      const eb = new EventBus(new FakeDelegate());
-      const msg: Message<any> = {
-        address: 'test',
-        replyAddress: 'rep',
-      };
-      const res: Message<any> = (eb as any)._appendReplyFns(msg);
-      expect(res.reply).to.be.a('function');
-      expect(res.rxReply).to.be.a('function');
+    describe('when message has a reply address', () => {
+      it('should append when reply and rxReply methods', () => {
+        const eb = new EventBus(new FakeDelegate());
+        const msg: Message<any> = {
+          address: 'test',
+          replyAddress: 'rep',
+        };
+        const res: Message<any> = (eb as any)._appendReplyFns(msg);
+        expect(res.reply).to.be.a('function');
+        expect(res.rxReply).to.be.a('function');
+      });
+    });
+    describe('when reply fn called', () => {
+      it('should call send with reply address', () => {
+        const eb = new EventBus(new FakeDelegate());
+        const msg: Message<any> = {
+          address: 'test',
+          replyAddress: 'rep',
+        };
+        const res: Message<any> = (eb as any)._appendReplyFns(msg);
+        expect(res.reply).to.be.a('function');
+        if (!res.reply) {
+          return; // for tsc
+        }
+        const spy = sinon.spy(eb, 'send');
+        const replyMessage = { reply: 'message' };
+        const replyHeaders = { header: 'header' };
+        res.reply(replyMessage, replyHeaders);
+        expect(spy).to.have.been.calledWithExactly(msg.replyAddress, replyMessage, replyHeaders);
+      });
+    });
+    describe('when rxReply fn called', () => {
+      it('should call rxSend with reply address', () => {
+        const eb = new EventBus(new FakeDelegate());
+        const msg: Message<any> = {
+          address: 'test',
+          replyAddress: 'rep',
+        };
+        const res: Message<any> = (eb as any)._appendReplyFns(msg);
+        expect(res.rxReply).to.be.a('function');
+        if (!res.rxReply) {
+          return; // for tsc
+        }
+        const spy = sinon.spy(eb, 'rxSend');
+        const replyMessage = { reply: 'message' };
+        const replyHeaders = { header: 'header' };
+        res.rxReply(replyMessage, replyHeaders);
+        expect(spy).to.have.been.calledWithExactly(msg.replyAddress, replyMessage, replyHeaders);
+      });
     });
   });
 });

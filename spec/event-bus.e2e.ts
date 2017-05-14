@@ -27,15 +27,24 @@ describe('EventBus', () => {
     expect(emissions[1]).to.have.property('kind', 'C');
     eb.close();
   });
-
-  it('should error via state$ when connection fails', async () => {
-    const eb = EventBus.create(wrongUrl);
-    const emissions = await getEmissions(eb.state$);
-    expect(emissions).to.have.length(3);
-    expect(emissions[0]).to.have.property('value', State.CONNECTING);
-    expect(emissions[1]).to.have.property('value', State.CLOSED);
-    expect(emissions[2]).to.have.property('kind', 'E');
-    eb.close();
+  describe('when connection fails', () => {
+    it('should complete state$', async () => {
+      const eb = EventBus.create(wrongUrl);
+      const emissions = await getEmissions(eb.state$);
+      expect(emissions).to.have.length(3);
+      expect(emissions[0]).to.have.property('value', State.CONNECTING);
+      expect(emissions[1]).to.have.property('value', State.CLOSED);
+      expect(emissions[2]).to.have.property('kind', 'C');
+      eb.close();
+    });
+    it('should have close reason', async () => {
+      const eb = EventBus.create(wrongUrl);
+      await notifyOnState(eb.state$, State.CLOSED);
+      expect(eb.closeEvent).to.be.not.null;
+      expect(eb.closeEvent).to.be.not.undefined;
+      expect(eb.closeEvent).to.have.property('wasClean', false);
+      eb.close();
+    });
   });
 
   it('should send message', async () => {

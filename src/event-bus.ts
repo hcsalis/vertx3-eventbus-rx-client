@@ -1,15 +1,15 @@
 import 'rxjs/add/observable/bindNodeCallback';
+import 'rxjs/add/observable/defer';
+import 'rxjs/add/observable/empty';
 import 'rxjs/add/observable/fromEvent';
 import 'rxjs/add/observable/fromEventPattern';
-import 'rxjs/add/observable/of';
-import 'rxjs/add/operator/concat';
+import 'rxjs/add/observable/merge';
 import 'rxjs/add/operator/first';
-import 'rxjs/add/operator/ignoreElements';
 import 'rxjs/add/operator/map';
+import 'rxjs/add/operator/mapTo';
+import 'rxjs/add/operator/startWith';
 import 'rxjs/add/operator/takeUntil';
 import { Observable } from 'rxjs/Observable';
-import { Observer } from 'rxjs/Observer';
-import { Subscription } from 'rxjs/Subscription';
 import * as EB from 'vertx3-eventbus-client';
 import { CloseEvent } from './model/close-event';
 import { Message } from './model/message';
@@ -22,12 +22,6 @@ export class EventBus {
     return new EventBus(delegate);
   }
 
-  state$: Observable<State>;
-
-  get state(): State {
-    return this.delegate.state;
-  }
-
   get defaultHeaders(): any {
     return this.delegate.defaultHeaders;
   }
@@ -36,32 +30,49 @@ export class EventBus {
     this.delegate.defaultHeaders = headers;
   }
 
+  state$: Observable<State>;
+
+  get state(): State {
+    return this.delegate.state;
+  }
+
+  get closeEvent() {
+    return this._closeEvent;
+  }
   private _closeEvent: CloseEvent | null = null;
 
   constructor(public delegate: any) {
-    this.state$ = this._createStateStream(delegate, () => this._closeEvent);
     // capture close event to pass it to future state subscriptions
-    this.state$
-      .ignoreElements()
-      .subscribe({ error: closeEvent => this._closeEvent = closeEvent });
+    this._stateClosedEvent$.subscribe(
+      event => this._closeEvent = event || null,
+    );
+    // init state$
+    this.state$ = Observable.defer(() => {
+      return Observable
+        .merge(
+        this._stateOpenEvent$.mapTo(State.OPEN).takeUntil(this._stateClosedEvent$),
+        this._stateClosedEvent$.mapTo(State.CLOSED),
+      )
+        .startWith(delegate.state);
+    });
   }
 
   send(address: string, message: any, headers?: any) {
     this.delegate.send(address, message, headers);
   }
 
-  rxSend(address: string, message: any, headers?: any) {
+  rxSend(address: string, message: any, headers?: any): Observable<Message<any>> {
     const generatorFn = Observable.bindNodeCallback<string, any, (object | undefined), Message<any>>(this.delegate.send.bind(this.delegate));
     return generatorFn(address, message, headers)
       .map(this._appendReplyFns)
-      .takeUntil(this._createCompleteNotifier(this.state$));
+      .takeUntil(this._stateClosedEvent$);
   }
 
   publish(address: string, message: any, headers?: any) {
     this.delegate.publish(address, message, headers);
   }
 
-  rxConsumer(address: string, headers?: any) {
+  rxConsumer(address: string, headers?: any): Observable<Message<any>> {
     return Observable.fromEventPattern(
       handler => {
         this.delegate.registerHandler(address, headers, handler);
@@ -77,8 +88,8 @@ export class EventBus {
         }
         return msg;
       })
-      .map<Message<any>, Message<any>>(this._appendReplyFns)
-      .takeUntil(this._createCompleteNotifier(this.state$));
+      .map(this._appendReplyFns)
+      .takeUntil(this._stateClosedEvent$);
   }
 
   close() {
@@ -105,62 +116,21 @@ export class EventBus {
     };
   }
 
-  private _createStateStream(delegate: any, getCloseEvent: () => CloseEvent | null): Observable<State> {
-    // add event listeners on sockjs instead of the delegate to preserve delegate's existing event handlers.
+  private get _stateOpenEvent$() {
+    if (this.state !== State.CONNECTING) {
+      return Observable.empty<void>();
+    }
     return Observable
-      .create((observer: Observer<State>) => {
-        observer.next(delegate.state);
-        if (delegate.state === State.CLOSED) {
-          if (getCloseEvent()) {
-            observer.error(this._closeEvent);
-          } else {
-            observer.complete();
-          }
-          return undefined;
-        }
-        const subs = new Subscription();
-        if (delegate.state === State.CONNECTING) {
-          const openSub = Observable
-            .fromEvent<State>(delegate.sockJSConn, 'open')
-            .first()
-            .subscribe(() => {
-              observer.next(State.OPEN);
-            });
-          subs.add(openSub);
-        }
-        const closeSub = Observable
-          .fromEvent<CloseEvent>(delegate.sockJSConn, 'close')
-          .first()
-          .subscribe(event => {
-            observer.next(State.CLOSED);
-            if (event.wasClean) {
-              observer.complete();
-            } else {
-              observer.error(event);
-            }
-          });
-        subs.add(closeSub);
-        return new Subscription(() => {
-          subs.unsubscribe();
-        });
-      });
+      .fromEvent<void>(this.delegate.sockJSConn, 'open')
+      .first();
   }
 
-  /**
-   * Creates a notifier observable to be used in conjunction with takeUntil operator.
-   * Returned observable:
-   * - Ignores all values emitted by source.
-   * - When source completes, emits a dummy notification to notify takeUntil operator.
-   * - When source errors, passes the same error.
-   * @private
-   * @param {Observable<any>} source observable
-   * @returns {Observable<any>} A notifier observable to be used in conjunction with takeUntil operator.
-   *
-   * @memberof EventBus
-   */
-  private _createCompleteNotifier(source: Observable<any>) {
-    return source
-      .ignoreElements()
-      .concat(Observable.of('complete notification'));
+  private get _stateClosedEvent$() {
+    if (this.state === State.CLOSED) {
+      return Observable.empty<CloseEvent>();
+    }
+    return Observable
+      .fromEvent<CloseEvent>(this.delegate.sockJSConn, 'close')
+      .first();
   }
 }

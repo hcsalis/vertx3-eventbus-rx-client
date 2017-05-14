@@ -22,6 +22,18 @@ export function getCloseEvent(wasClean: boolean): CloseEvent {
   };
 }
 
+export function countDone(done: MochaDone, count: number) {
+  return (error?: any) => {
+    if (error) {
+      done(error);
+      return;
+    }
+    if (--count <= 0) {
+      done();
+    }
+  };
+}
+
 export async function getEmissions<T = any>(obs: Rx.Observable<T>) {
   return obs.materialize().toArray().toPromise();
 }
