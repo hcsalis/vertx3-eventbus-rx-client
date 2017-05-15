@@ -943,7 +943,7 @@ img { max-width: 100%; }
 			<p>install using npm:</p>
 			<pre><code>npm <span class="hljs-keyword">install</span> vertx3-eventbus-rx-<span class="hljs-keyword">client</span> <span class="hljs-comment">--save</span>
 </code></pre><h3 id="peer-dependencies">Peer Dependencies</h3>
-			<p>Make sure you have RxJS 5 and original event bus client as dependencies in your project, or install them as follows:</p>
+			<p>Make sure you have RxJS 5 and official event bus client as dependencies in your project, or install them as follows:</p>
 			<pre><code>npm <span class="hljs-keyword">install</span> vertx3-eventbus-<span class="hljs-keyword">client</span> <span class="hljs-comment">--save</span>
 </code></pre><pre><code>npm <span class="hljs-keyword">install</span> rxjs <span class="hljs-comment">--save</span>
 </code></pre><h3 id="usage">Usage</h3>
@@ -958,14 +958,61 @@ img { max-width: 100%; }
 <span class="hljs-keyword">const</span> eb = RxEB.EventBus.create(<span class="hljs-string">'server-address'</span>);
 </code></pre>
 			<h2 id="api">API</h2>
-			<p>Generated API documentation can be found <a href="http://hcsalis.github.io/vertx3-eventbus-rx-client">here</a>.</p>
+			<p>Creating an instance:</p>
+			<pre><code class="lang-javascript"><span class="hljs-comment">// by using factory method</span>
+<span class="hljs-keyword">const</span> eb = EventBus.create(<span class="hljs-string">'server-url'</span>);
+
+<span class="hljs-comment">// by wrapping an existing non-Rxified eventbus object</span>
+<span class="hljs-keyword">const</span> eb = <span class="hljs-keyword">new</span> EventBus(delegateEB);
+</code></pre>
+			<p>EventBus state:</p>
+			<pre><code class="lang-javascript"><span class="hljs-keyword">let</span> ebState;
+
+<span class="hljs-comment">// getting current state</span>
+ebState = eb.state;
+
+<span class="hljs-comment">// getting current state and future changes</span>
+eb.state$.subscribe(
+  <span class="hljs-function"><span class="hljs-params">state</span> =&gt;</span> {
+    ebState = state;
+  }
+);
+</code></pre>
+			<p>Sending messages:</p>
+			<pre><code class="lang-javascript"><span class="hljs-keyword">const</span> message = {};
+<span class="hljs-comment">// send a message</span>
+ebState = eb.send(<span class="hljs-string">'address'</span>, message);
+
+<span class="hljs-comment">// send and expect a reply</span>
+eb.rxSend(<span class="hljs-string">'address'</span>, message).subscribe(
+  <span class="hljs-function"><span class="hljs-params">reply</span> =&gt;</span> {
+    <span class="hljs-comment">// received a reply</span>
+  },
+  error =&gt; {
+    <span class="hljs-comment">// received an error</span>
+  }
+);
+</code></pre>
+			<p>Message consumer:</p>
+			<pre><code class="lang-javascript">
+<span class="hljs-comment">// register consumer</span>
+<span class="hljs-keyword">const</span> subscription =  eb.rxConsumer(<span class="hljs-string">'address'</span>).subscribe(
+  <span class="hljs-function"><span class="hljs-params">message</span> =&gt;</span> {
+    <span class="hljs-comment">// received messages</span>
+  }
+);
+
+<span class="hljs-comment">// un-register consumer</span>
+subscription();
+</code></pre>
+			<p>Full API documentation can be found <a href="https://hcsalis.github.io/vertx3-eventbus-rx-client/classes/eventbus.html">HERE</a>.</p>
 			<h2 id="testing">Testing</h2>
 			<p>Run unit tests with:</p>
 			<pre><code>npm <span class="hljs-keyword">run</span><span class="bash"> <span class="hljs-built_in">test</span></span>
 </code></pre><p>End-to-end tests should be run against the <a href="https://github.com/hcsalis/vertx3-eventbus-rx-client-test-server">Test Server</a>. Once it is up and running, start the tests with this command:</p>
 			<pre><code>npm <span class="hljs-keyword">run</span><span class="bash"> e2e</span>
 </code></pre><h2 id="license">License</h2>
-			<p>This project is licensed under the MIT License - see the <a href="LICENSE.md">LICENSE.md</a> file for details</p>
+			<p>This project is licensed under the MIT License - see the <a href="https://github.com/hcsalis/vertx3-eventbus-rx-client/blob/master/LICENSE">LICENSE</a> file for details</p>
 		</div>
 		<section class="tsd-panel-group tsd-index-group">
 			<h2>Index</h2>

@@ -89,7 +89,7 @@ export class EventBus {
 
   /**
    * Creates an instance of Rxified EventBus.
-   * This is useful if you have to wrap an existing non-Rxified EventBus instance. Otherwise, use the static factory method to create an instance.
+   * This is useful if you want to wrap an existing non-Rxified EventBus instance. Otherwise, use the static factory method to create an instance.
    * @param {*} delegate non-Rxified EventBus instance
    *
    * @memberof EventBus

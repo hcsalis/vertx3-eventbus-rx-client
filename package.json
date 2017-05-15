@@ -11,12 +11,15 @@
     "name": "Halil Can Salis"
   },
   "keywords": [
-    "websockets",
-    "websocket",
-    "sockjs",
-    "vert.x",
     "vertx3-eventbus-client",
+    "vertx",
+    "vert.x",
+    "eventbus",
+    "client",
     "rxjs",
+    "reactive",
+    "sockjs",
+    "javascript",
     "typescript"
   ],
   "files": [

@@ -18,7 +18,7 @@ npm install vertx3-eventbus-rx-client --save
 
 ### Peer Dependencies
 
-Make sure you have RxJS 5 and original event bus client as dependencies in your project, or install them as follows:
+Make sure you have RxJS 5 and official event bus client as dependencies in your project, or install them as follows:
 ```
 npm install vertx3-eventbus-client --save
 ```
@@ -43,8 +43,62 @@ const eb = RxEB.EventBus.create('server-address');
 ```
 
 ## API
+Creating an instance:
+```javascript
+// by using factory method
+const eb = EventBus.create('server-url');
 
-Generated API documentation can be found [here](http://hcsalis.github.io/vertx3-eventbus-rx-client).
+// by wrapping an existing non-Rxified eventbus object
+const eb = new EventBus(delegateEB);
+```
+
+EventBus state:
+```javascript
+let ebState;
+
+// getting current state
+ebState = eb.state;
+
+// getting current state and future changes
+eb.state$.subscribe(
+  state => {
+    ebState = state;
+  }
+);
+```
+
+Sending messages:
+```javascript
+const message = {};
+// send a message
+ebState = eb.send('address', message);
+
+// send and expect a reply
+eb.rxSend('address', message).subscribe(
+  reply => {
+    // received a reply
+  },
+  error => {
+    // received an error
+  }
+);
+```
+
+Message consumer:
+```javascript
+
+// register consumer
+const subscription =  eb.rxConsumer('address').subscribe(
+  message => {
+    // received messages
+  }
+);
+
+// un-register consumer
+subscription();
+```
+
+Full API documentation can be found [HERE](https://hcsalis.github.io/vertx3-eventbus-rx-client/classes/eventbus.html).
 
 ## Testing
 
@@ -58,4 +112,4 @@ npm run e2e
 ```
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
+This project is licensed under the MIT License - see the [LICENSE](https://github.com/hcsalis/vertx3-eventbus-rx-client/blob/master/LICENSE) file for details
