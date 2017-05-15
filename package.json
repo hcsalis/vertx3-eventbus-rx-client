@@ -1,6 +1,6 @@
 {
   "name": "vertx3-eventbus-rx-client",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "RxJS powered Event Bus client for Vert.x 3",
   "license": "MIT",
   "repository": {
