@@ -7,6 +7,13 @@
 
 [RxJS](http://reactivex.io/rxjs/) powered Event Bus client for [Vert.x 3](http://vertx.io/).
 
+This library: 
+- Offers an API similar to Rxified server counterpart.
+- Includes Typescript definitions and provides interfaces for data models (Message, CloseEvent etc.).
+- Wraps the official client without side effects, thus can be used together with the official client by providing it as a delegate to the constructor.
+- Helps to prevent memory leaks by unsubscribing on disconnect or close (or after receiving a reply in case of rxSend).
+- Does not provide features like send with timeout, auto-resubscription etc. because these are trivial to implement with rxjs operators and subjects.
+
 ## Getting Started
 
 ### Installation
@@ -56,10 +63,10 @@ EventBus state:
 ```javascript
 let ebState;
 
-// getting current state
+// get current state
 ebState = eb.state;
 
-// getting current state and future changes
+// get current state and future changes
 eb.state$.subscribe(
   state => {
     ebState = state;
@@ -90,12 +97,30 @@ Message consumer:
 // register consumer
 const subscription =  eb.rxConsumer('address').subscribe(
   message => {
-    // received messages
+    // received a message
   }
 );
 
 // un-register consumer
-subscription();
+subscription.unsubscribe();
+```
+
+Getting close event:
+```javascript
+
+// get close event
+eb.closeEvent;
+
+// close event is null until State is CLOSED 
+eb.state$.subscribe(
+  state => {
+    if (state !== State.CLOSED) {
+      console.log(eb.closeEvent); // null
+    } else {
+      console.log(eb.closeEvent); // NOT null. Refer to CloseEvent docs on the link below.
+    }
+  }
+);
 ```
 
 Full API documentation can be found [HERE](https://hcsalis.github.io/vertx3-eventbus-rx-client/classes/eventbus.html).

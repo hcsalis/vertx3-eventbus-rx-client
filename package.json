@@ -31,7 +31,7 @@
     "clean": "rimraf dist",
     "lint": "tslint --force --format verbose \"src/**/*.ts\"",
     "build": "npm run clean && npm run lint && echo Using TypeScript && tsc --version && tsc --pretty",
-    "docs": "npm run build && typedoc --name \"RxJS powered Event Bus client for Vert.x 3\" --theme minimal --mode file --out ./docs ./dist",
+    "docs": "npm run build && typedoc --name \"RxJS powered Event Bus client for Vert.x 3\" --theme minimal --excludePrivate --mode file --out ./docs ./dist",
     "test": "npm run build && mocha --compilers ts:ts-node/register --recursive \"spec/**/*.spec.ts\"",
     "e2e": "npm run build && mocha --compilers ts:ts-node/register --recursive \"spec/**/*.e2e.ts\"",
     "coverage": "nyc --include=\"src/**/*.ts\" --reporter=text --reporter=lcov mocha --compilers ts:ts-node/register --recursive \"spec/**/*.spec.ts\"",

@@ -938,6 +938,14 @@ img { max-width: 100%; }
 			<a href="http://opensource.org/licenses/MIT"><img src="http://img.shields.io/badge/license-MIT-brightgreen.svg" alt="MIT license"></a></p>
 			<h1 id="vertx3-eventbus-rx-client">vertx3-eventbus-rx-client</h1>
 			<p><a href="http://reactivex.io/rxjs/">RxJS</a> powered Event Bus client for <a href="http://vertx.io/">Vert.x 3</a>.</p>
+			<p>This library: </p>
+			<ul>
+				<li>Offers an API similar to Rxified server counterpart.</li>
+				<li>Includes Typescript definitions and provides interfaces for data models (Message, CloseEvent etc.).</li>
+				<li>Wraps the official client without side effects, thus can be used together with the official client by providing it as a delegate to the constructor.</li>
+				<li>Helps to prevent memory leaks by unsubscribing on disconnect or close (or after receiving a reply in case of rxSend).</li>
+				<li>Does not provide features like send with timeout, auto-resubscription etc. because these are trivial to implement with rxjs operators and subjects.</li>
+			</ul>
 			<h2 id="getting-started">Getting Started</h2>
 			<h3 id="installation">Installation</h3>
 			<p>install using npm:</p>
@@ -968,10 +976,10 @@ img { max-width: 100%; }
 			<p>EventBus state:</p>
 			<pre><code class="lang-javascript"><span class="hljs-keyword">let</span> ebState;
 
-<span class="hljs-comment">// getting current state</span>
+<span class="hljs-comment">// get current state</span>
 ebState = eb.state;
 
-<span class="hljs-comment">// getting current state and future changes</span>
+<span class="hljs-comment">// get current state and future changes</span>
 eb.state$.subscribe(
   <span class="hljs-function"><span class="hljs-params">state</span> =&gt;</span> {
     ebState = state;
@@ -998,12 +1006,28 @@ eb.rxSend(<span class="hljs-string">'address'</span>, message).subscribe(
 <span class="hljs-comment">// register consumer</span>
 <span class="hljs-keyword">const</span> subscription =  eb.rxConsumer(<span class="hljs-string">'address'</span>).subscribe(
   <span class="hljs-function"><span class="hljs-params">message</span> =&gt;</span> {
-    <span class="hljs-comment">// received messages</span>
+    <span class="hljs-comment">// received a message</span>
   }
 );
 
 <span class="hljs-comment">// un-register consumer</span>
-subscription();
+subscription.unsubscribe();
+</code></pre>
+			<p>Getting close event:</p>
+			<pre><code class="lang-javascript">
+<span class="hljs-comment">// get close event</span>
+eb.closeEvent;
+
+<span class="hljs-comment">// close event is null until State is CLOSED </span>
+eb.state$.subscribe(
+  <span class="hljs-function"><span class="hljs-params">state</span> =&gt;</span> {
+    <span class="hljs-keyword">if</span> (state !== State.CLOSED) {
+      <span class="hljs-built_in">console</span>.log(eb.closeEvent); <span class="hljs-comment">// null</span>
+    } <span class="hljs-keyword">else</span> {
+      <span class="hljs-built_in">console</span>.log(eb.closeEvent); <span class="hljs-comment">// NOT null. Refer to CloseEvent docs on the link below.</span>
+    }
+  }
+);
 </code></pre>
 			<p>Full API documentation can be found <a href="https://hcsalis.github.io/vertx3-eventbus-rx-client/classes/eventbus.html">HERE</a>.</p>
 			<h2 id="testing">Testing</h2>
