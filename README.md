@@ -25,9 +25,9 @@ npm install vertx3-eventbus-rx-client --save
 
 ### Peer Dependencies
 
-Make sure you have RxJS 5 and official event bus client as dependencies in your project, or install them as follows:
+Make sure you have RxJS 5 and official event bus client (version 3.4.x) as dependencies in your project, or install them as follows:
 ```
-npm install vertx3-eventbus-client --save
+npm install vertx3-eventbus-client@3.4.2 --save
 ```
 ```
 npm install rxjs --save
@@ -78,7 +78,7 @@ Sending messages:
 ```javascript
 const message = {};
 // send a message
-ebState = eb.send('address', message);
+eb.send('address', message);
 
 // send and expect a reply
 eb.rxSend('address', message).subscribe(
