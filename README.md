@@ -33,7 +33,7 @@ npm install vertx3-eventbus-client --save
 npm install rxjs --save
 ```
 
-In order to use RxJS 6.x you should install the compatibility layer (see [Backwards compatibility]):(https://github.com/ReactiveX/rxjs/blob/master/MIGRATION.md#backwards-compatibility)):
+In order to use RxJS 6.x you should install the compatibility layer (see [Backwards compatibility](https://github.com/ReactiveX/rxjs/blob/master/MIGRATION.md#backwards-compatibility)):
 ```
 npm install rxjs-compat --save
 ```
