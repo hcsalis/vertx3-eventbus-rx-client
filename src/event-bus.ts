@@ -4,6 +4,8 @@ import 'rxjs/add/observable/empty';
 import 'rxjs/add/observable/fromEvent';
 import 'rxjs/add/observable/fromEventPattern';
 import 'rxjs/add/observable/merge';
+import 'rxjs/add/observable/of';
+import 'rxjs/add/operator/distinct';
 import 'rxjs/add/operator/first';
 import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/mapTo';
@@ -104,10 +106,11 @@ export class EventBus {
     this.state$ = Observable.defer(() => {
       return Observable
         .merge(
-        this._stateOpenEvent$.mapTo(State.OPEN).takeUntil(this._stateClosedEvent$),
-        this._stateClosedEvent$.mapTo(State.CLOSED),
-      )
-        .startWith(delegate.state);
+          this._stateOpenEvent$.mapTo(State.OPEN).takeUntil(this._stateClosedEvent$),
+          this._stateClosedEvent$.mapTo(State.CLOSED),
+        )
+        .startWith(delegate.state)
+        .distinct();
     });
   }
 
@@ -138,7 +141,9 @@ export class EventBus {
    * @memberof EventBus
    */
   rxSend(address: string, message: any, headers?: any): Observable<Message<any>> {
-    const generatorFn = Observable.bindNodeCallback<string, any, (any | undefined), Message<any>>(this.delegate.send.bind(this.delegate));
+    const generatorFn = Observable.bindNodeCallback(
+      (addr: string, msg: any, hs: (any | undefined), callback: (err: any, res: Message<any>) => any) => this.delegate.send(addr, msg, hs, callback),
+    );
     return generatorFn(address, message, headers)
       .map(this._appendReplyFns)
       .takeUntil(this._stateClosedEvent$);
@@ -226,7 +231,7 @@ export class EventBus {
 
   private get _stateOpenEvent$() {
     if (this.state !== State.CONNECTING) {
-      return Observable.empty<void>();
+      return Observable.empty();
     }
     return Observable
       .fromEvent<void>(this.delegate.sockJSConn, 'open')
@@ -234,8 +239,8 @@ export class EventBus {
   }
 
   private get _stateClosedEvent$() {
-    if (this.state === State.CLOSED) {
-      return Observable.empty<CloseEvent>();
+    if (this._closeEvent) {
+      return Observable.of(this._closeEvent);
     }
     return Observable
       .fromEvent<CloseEvent>(this.delegate.sockJSConn, 'close')

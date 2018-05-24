@@ -25,12 +25,17 @@ npm install vertx3-eventbus-rx-client --save
 
 ### Peer Dependencies
 
-Make sure you have RxJS 5 and official event bus client (version 3.4.x) as dependencies in your project, or install them as follows:
+Make sure you have RxJS (5 or greater) and official event bus client (version 3.4 or greater) as dependencies in your project, or install them as follows:
 ```
-npm install vertx3-eventbus-client@3.4.2 --save
+npm install vertx3-eventbus-client --save
 ```
 ```
 npm install rxjs --save
+```
+
+In order to use RxJS 6.x you should install the compatibility layer (see [Backwards compatibility]):(https://github.com/ReactiveX/rxjs/blob/master/MIGRATION.md#backwards-compatibility)):
+```
+npm install rxjs-compat --save
 ```
 
 ### Usage
